@@ -44,6 +44,7 @@ pub mod parser {
         for i in text_array {
             if i == ' ' && first_word_vec.len() != 0 {
                 break;
+            } else if i == ' ' && first_word_vec.len() == 0 {
             } else if i == '#' && first_word_vec.len() == 0 {
                 return String::from("comment");
             } else {
