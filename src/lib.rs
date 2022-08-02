@@ -20,6 +20,7 @@ pub mod parser {
         vars: Vec<Variable>,
         keybinds: Vec<Keybind>,
         startup: Vec<String>,
+        include: Vec<String>,
     }
 
     pub fn file_to_struct(filename: String) {
@@ -27,6 +28,7 @@ pub mod parser {
             vars: Vec::new(),
             keybinds: Vec::new(),
             startup: Vec::new(),
+            include: Vec::new(),
         };
         if let Ok(lines) = read_lines(filename) {  // If read_lines sucseeds, lines is an array
             for line in lines {
@@ -37,7 +39,8 @@ pub mod parser {
                         "startup" => add_startup(config_file.clone(), command),
                         "variable" => add_var(config_file.clone(), command),
                         "keybind" => add_keybind(config_file.clone(), command),
-                        _ => panic!("something went wrong"),
+                        "include" => add_include(config_file.clone(), command),
+                        _ => panic!("I fucked up"),
                     };
                 }
             }
@@ -162,6 +165,27 @@ pub mod parser {
         }
         let action: String = action_vec.iter().collect();
         config_file.startup.push(action);
+        return config_file;
+    }
+
+    fn add_include(mut config_file: ConfigFile, command: String) -> ConfigFile {
+        let cmd_str: &str = &command[..];
+        let cmd_array = cmd_str.chars();
+        let mut inc_vec: Vec<char>= Vec::new();
+        let mut on_command: bool = false;
+        let mut start_inc: bool = false;
+        for c in cmd_array {
+            if c != ' ' && !on_command && !start_inc {
+                on_command = true;
+            } else if c == ' ' && on_command {
+                on_command = false;
+                start_inc = true;
+            } else if c != ' ' && start_inc {
+                inc_vec.push(c);
+            }
+        }
+        let inc: String = inc_vec.iter().collect();
+        config_file.include.push(inc);
         return config_file;
     }
 }
