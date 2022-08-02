@@ -19,12 +19,14 @@ pub mod parser {
     struct ConfigFile {
         vars: Vec<Variable>,
         keybinds: Vec<Keybind>,
+        startup: Vec<String>,
     }
 
     pub fn file_to_struct(filename: String) {
         let mut config_file = ConfigFile {
             vars: Vec::new(),
             keybinds: Vec::new(),
+            startup: Vec::new(),
         };
         if let Ok(lines) = read_lines(filename) {  // If read_lines sucseeds, lines is an array
             for line in lines {
@@ -32,8 +34,9 @@ pub mod parser {
                     let command_type: String = get_type(&command);
                     let type_str: &str = &command_type[..];
                     config_file = match type_str {
+                        "startup" => add_startup(config_file.clone(), command),
                         "variable" => add_var(config_file.clone(), command),
-                        "keybind" => add_keybind(config_file, command),
+                        "keybind" => add_keybind(config_file.clone(), command),
                         _ => panic!("something went wrong"),
                     };
                 }
@@ -66,7 +69,7 @@ pub mod parser {
         let first_word: String = first_word_vec.iter().collect();
         let first_word_str: &str = &first_word[..];
         let output: &str = match first_word_str {
-            "exec" => "launch_on_start",
+            "exec" => "startup",
             "set" => "variable",
             "bindsym" => "keybind",
             "mode" => "mode",
@@ -79,14 +82,14 @@ pub mod parser {
         return output.to_string();
     }
 
-    fn add_var(mut config_file: ConfigFile, declaration: String) -> ConfigFile {
-        let dec_str: &str = &declaration[..];
-        let dec_array = dec_str.chars();
+    fn add_var(mut config_file: ConfigFile, command: String) -> ConfigFile {
+        let cmd_str: &str = &command[..];
+        let cmd_array = cmd_str.chars();
         let mut name_vec: Vec<char> = Vec::new();
         let mut value_vec: Vec<char> = Vec::new();
         let mut start_name: bool = false;
         let mut start_value: bool = false;
-        for c in dec_array {
+        for c in cmd_array {
             if c == '$' && !start_name && !start_value {
                 start_name = true;
             } else if start_name && c == ' ' {
@@ -108,15 +111,15 @@ pub mod parser {
         return config_file;
     }
 
-    fn add_keybind(mut config_file: ConfigFile, declaration: String) -> ConfigFile {
-        let dec_str: &str = &declaration[..];
-        let dec_array = dec_str.chars();
+    fn add_keybind(mut config_file: ConfigFile, command: String) -> ConfigFile {
+        let cmd_str: &str = &command[..];
+        let cmd_array = cmd_str.chars();
         let mut bind_vec: Vec<char> = Vec::new();
         let mut action_vec: Vec<char> = Vec::new();
         let mut on_command: bool = false;
         let mut start_bind: bool = false;
         let mut start_action: bool = false;
-        for c in dec_array {
+        for c in cmd_array {
             if c != ' ' && !on_command && !start_bind && !start_action {
                 on_command = true;
             } else if c == ' ' && on_command {
@@ -138,6 +141,27 @@ pub mod parser {
             action: action,
         };
         config_file.keybinds.push(keybind);
+        return config_file;
+    }
+
+    fn add_startup(mut config_file: ConfigFile, command: String) -> ConfigFile {
+        let cmd_str: &str = &command[..];
+        let cmd_array = cmd_str.chars();
+        let mut action_vec: Vec<char> = Vec::new();
+        let mut on_command: bool = false;
+        let mut start_action: bool = false;
+        for c in cmd_array {
+            if c != ' ' && !on_command && !start_action {
+                on_command = true;
+            } else if c == ' ' && on_command {
+                on_command = false;
+                start_action = true;
+            } else if c != ' ' && start_action {
+                action_vec.push(c);
+            }
+        }
+        let action: String = action_vec.iter().collect();
+        config_file.startup.push(action);
         return config_file;
     }
 }
