@@ -3,33 +3,39 @@ pub mod parser {
     use std::io::{self, BufRead};
     use std::path::Path;
 
-    /*    struct Variable {
-            name: String,
-            value: String,
-        }
+    #[derive(Clone)]
+    struct Variable {
+        name: String,
+        value: String,
+    }
 
-        struct Keybind {
-            binding: String,
-            effect: String,
-        }
+    #[derive(Clone)]
+    struct Keybind {
+        binding: String,
+        action: String,
+    }
 
-        struct ConfigFile {
-            wallpaper: String,
-            vars: Vec<Variable>,
-            keybinds: Vec<Keybind>,
-            on_start: Vec<String>,
-        }
-    */
+    #[derive(Clone)]
+    struct ConfigFile {
+        vars: Vec<Variable>,
+        keybinds: Vec<Keybind>,
+    }
+
     pub fn file_to_struct(filename: String) {
-        if let Ok(lines) = read_lines(filename) {
+        let mut config_file = ConfigFile {
+            vars: Vec::new(),
+            keybinds: Vec::new(),
+        };
+        if let Ok(lines) = read_lines(filename) {  // If read_lines sucseeds, lines is an array
             for line in lines {
                 if let Ok(command) = line {
                     let command_type: String = get_type(&command);
                     let type_str: &str = &command_type[..];
-                    match type_str {
-                        "variable" => var_struct(command),
+                    config_file = match type_str {
+                        "variable" => add_var(config_file.clone(), command),
+                        "keybind" => add_keybind(config_file, command),
                         _ => panic!("something went wrong"),
-                    }
+                    };
                 }
             }
         }
@@ -73,7 +79,7 @@ pub mod parser {
         return output.to_string();
     }
 
-    fn var_struct(declaration: String) {
+    fn add_var(mut config_file: ConfigFile, declaration: String) -> ConfigFile {
         let dec_str: &str = &declaration[..];
         let dec_array = dec_str.chars();
         let mut name_vec: Vec<char> = Vec::new();
@@ -94,7 +100,44 @@ pub mod parser {
         }
         let name: String = name_vec.iter().collect();
         let value: String = value_vec.iter().collect();
-        println!("name: {}", name);
-        println!("value: {}", value);
+        let variable = Variable {
+            name: name,
+            value: value,
+        };
+        config_file.vars.push(variable);
+        return config_file;
+    }
+
+    fn add_keybind(mut config_file: ConfigFile, declaration: String) -> ConfigFile {
+        let dec_str: &str = &declaration[..];
+        let dec_array = dec_str.chars();
+        let mut bind_vec: Vec<char> = Vec::new();
+        let mut action_vec: Vec<char> = Vec::new();
+        let mut on_command: bool = false;
+        let mut start_bind: bool = false;
+        let mut start_action: bool = false;
+        for c in dec_array {
+            if c != ' ' && !on_command && !start_bind && !start_action {
+                on_command = true;
+            } else if c == ' ' && on_command {
+                on_command = false;
+                start_bind = true;
+            } else if c != ' ' && start_bind {
+                bind_vec.push(c);
+            } else if c == ' ' && start_bind {
+                start_bind = false;
+                start_action = true;
+            } else if start_action {
+                action_vec.push(c);
+            }
+        }
+        let binding: String = bind_vec.iter().collect();
+        let action: String = action_vec.iter().collect();
+        let keybind = Keybind {
+            binding: binding,
+            action: action,
+        };
+        config_file.keybinds.push(keybind);
+        return config_file;
     }
 }
