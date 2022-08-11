@@ -9,19 +9,19 @@ pub mod parser {
         CommentLine,
     }
 
-    #[derive(Clone)]
+    #[derive(Clone, Debug)]
     pub struct Variable {
         name: String,
         value: String,
     }
 
-    #[derive(Clone)]
+    #[derive(Clone, Debug)]
     pub struct Keybind {
         binding: String,
         action: String,
     }
 
-    #[derive(Clone)]
+    #[derive(Clone, Debug)]
     pub struct ConfigFile {
         vars: Vec<Variable>,
         keybinds: Vec<Keybind>,
@@ -47,6 +47,7 @@ pub mod parser {
                 _ => panic!("I screwed up"),
             };
         }
+        println!("{:?}", config_file);
     }
 
     pub fn read_lines(filename: String) -> Vec<String> {
@@ -191,7 +192,7 @@ pub mod parser {
             } else if c == ' ' && on_command {
                 on_command = false;
                 start_action = true;
-            } else if c != ' ' && start_action {
+            } else if start_action {
                 action_vec.push(c);
             }
         }
